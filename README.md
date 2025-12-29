@@ -24,6 +24,38 @@ exo: Run your own AI cluster at home with everyday devices. Maintained by [exo l
 
 ---
 
+## NVIDIA CUDA Support (exo-cuda fork)
+
+This fork adds **full NVIDIA CUDA support** via the tinygrad inference engine, enabling distributed inference across NVIDIA GPUs including Tesla M40, V100, A100, and consumer cards.
+
+### Quick Start for NVIDIA GPUs
+
+```bash
+# Clone this repo
+git clone https://github.com/Scottcjn/exo-cuda.git
+cd exo-cuda
+
+# Create venv and install
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+
+# Start with tinygrad (CUDA) backend
+exo --inference-engine tinygrad --chatgpt-api-port 8001 --disable-tui
+```
+
+### Tested Hardware
+- Tesla M40 24GB
+- Tesla V100 SXM2 16GB
+- Multi-node clusters over ethernet
+
+### Requirements
+- NVIDIA GPU with CUDA support
+- CUDA drivers installed
+- Python 3.10+
+
+---
+
 Forget expensive NVIDIA GPUs, unify your existing devices into one powerful GPU: iPhone, iPad, Android, Mac, Linux, pretty much any device!
 
 <div align="center">
