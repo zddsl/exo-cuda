@@ -21,7 +21,15 @@ from .tensor_format import UniversalTensor, DType
 from .shard import InterweaveShard, create_model_shards, estimate_layer_memory
 from .state import InterweaveState, StateManager
 from .backend import InterweaveBackend, BackendRegistry, BackendCapabilities
-from .router import InterweaveRouter, InterweaveServiceImpl, PeerNode
+
+# Router requires gRPC which may not be available on all platforms (e.g., Power8)
+try:
+    from .router import InterweaveRouter, InterweaveServiceImpl, PeerNode, GRPC_AVAILABLE
+except ImportError:
+    InterweaveRouter = None
+    InterweaveServiceImpl = None
+    PeerNode = None
+    GRPC_AVAILABLE = False
 
 __all__ = [
     # Core types
@@ -34,10 +42,11 @@ __all__ = [
     'InterweaveBackend',
     'BackendRegistry',
     'BackendCapabilities',
-    # Routing
+    # Routing (may be None if gRPC unavailable)
     'InterweaveRouter',
     'InterweaveServiceImpl',
     'PeerNode',
+    'GRPC_AVAILABLE',
     # Helpers
     'create_model_shards',
     'estimate_layer_memory',

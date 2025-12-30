@@ -10,23 +10,30 @@ import logging
 import time
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Tuple, Any
-import grpc
 
 from .backend import BackendRegistry, InterweaveBackend, BackendCapabilities
 from .tensor_format import UniversalTensor
 from .shard import InterweaveShard
 from .state import InterweaveState
-from .proto import (
-    ForwardRequest,
-    ForwardResponse,
-    RouteQueryRequest,
-    RouteQueryResponse,
-    RouteCandidate,
-    InterweaveServiceStub,
-    UniversalTensorProto,
-    InterweaveShardProto,
-    InterweaveStateProto,
-)
+
+# gRPC is optional (may not build on all platforms like Power8 ppc64le)
+try:
+    import grpc
+    from .proto import (
+        ForwardRequest,
+        ForwardResponse,
+        RouteQueryRequest,
+        RouteQueryResponse,
+        RouteCandidate,
+        InterweaveServiceStub,
+        UniversalTensorProto,
+        InterweaveShardProto,
+        InterweaveStateProto,
+    )
+    GRPC_AVAILABLE = True
+except ImportError:
+    grpc = None
+    GRPC_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
