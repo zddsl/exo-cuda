@@ -7,7 +7,7 @@ between numpy, tinygrad, mlx, and torch formats.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 import numpy as np
 import struct
 
@@ -99,7 +99,7 @@ class UniversalTensor:
         zero_point: Quantization zero point (for i8/i4 types)
     """
     data: bytes
-    shape: tuple[int, ...]
+    shape: Tuple[int, ...]
     dtype: DType
     layout: str = 'row_major'
     device_hint: str = 'any'

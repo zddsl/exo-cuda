@@ -6,7 +6,7 @@ for heterogeneous compute clustering.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Tuple, List, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .backend import InterweaveBackend
@@ -47,7 +47,7 @@ class InterweaveShard:
     n_layers: int
 
     # Interweave extensions
-    preferred_backends: tuple[str, ...] = ('any',)
+    preferred_backends: Tuple[str, ...] = ('any',)
     required_dtype: Optional[str] = None
     memory_estimate: int = 0
     compute_intensity: float = 1.0
@@ -127,7 +127,7 @@ class InterweaveShard:
             requires_kv_cache=self.requires_kv_cache,
         )
 
-    def split(self, at_layer: int) -> tuple['InterweaveShard', 'InterweaveShard']:
+    def split(self, at_layer: int) -> Tuple['InterweaveShard', 'InterweaveShard']:
         """
         Split this shard at a specific layer.
 
@@ -273,9 +273,9 @@ def estimate_layer_memory(model_id: str, layer_idx: int, dtype: str = 'f16') -> 
 def create_model_shards(
     model_id: str,
     n_layers: int,
-    splits: list[tuple[int, str]],
+    splits: List[Tuple[int, str]],
     dtype: str = 'f16'
-) -> list[InterweaveShard]:
+) -> List[InterweaveShard]:
     """
     Create shards for a model with specified split points and backends.
 
