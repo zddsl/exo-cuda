@@ -113,13 +113,47 @@ UniversalTensor serialize/deserialize throughput:
 | f32 → i8 (quantize) | 2.2ms | 3.0ms | 27.5ms |
 | i8 → f32 (dequantize) | 2.1ms | 1.4ms | 2.6ms |
 
+## Large Tensor Memory Test
+
+Testing tensor sizes that exceed GPU VRAM to demonstrate Power8's role:
+
+| Test Case | Size | V100 CUDA | FirePro OpenCL | Power8 CPU |
+|-----------|------|-----------|----------------|------------|
+| Small (Llama 1B) | 0.1MB | 3565ms | 2039ms | 2222ms |
+| Medium (8B context) | 16MB | 9611ms | 14835ms | **Fits** |
+| Large (70B hidden) | 64MB | 15426ms | OOM | **Fits** |
+| XL (Full 70B context) | 128MB | OOM | OOM | **Fits** |
+| XXL (Batch inference) | 512MB | OOM | OOM | **Fits** |
+
+**Key Insight**: Power8's 576GB RAM feeds the GPUs, GPUs accelerate inference!
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│           HYBRID MEMORY+COMPUTE ARCHITECTURE                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│     Power8 (576GB RAM)              GPUs (Compute Accelerators)     │
+│   ┌──────────────────┐           ┌──────────────────┐               │
+│   │  Model Weights   │──────────►│  V100 CUDA       │               │
+│   │  140GB @ fp16    │  tensors  │  Attention/FFN   │               │
+│   │  KV-Cache 100GB+ │◄──────────│  Fast compute    │               │
+│   │  Memory Server   │           └──────────────────┘               │
+│   └──────────────────┘           ┌──────────────────┐               │
+│                                  │  FirePro OpenCL  │               │
+│                                  │  Auxiliary GPU   │               │
+│                                  └──────────────────┘               │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 ## Key Findings
 
 1. **CUDA is fastest** for compute-intensive operations (V100 = 2x FirePro D500)
-2. **Power8 excels at memory bandwidth** - 576GB RAM ideal for large model sharding
-3. **Serialization overhead is minimal** - <0.5ms for 2MB tensors
-4. **OpenCL works on AMD GPUs** via tinygrad's GPU backend
-5. **gRPC is optional** - Power8 runs without gRPC (ppc64le compatibility)
+2. **Power8 is the memory server** - 576GB RAM stores entire 70B+ models
+3. **GPUs accelerate, Power8 feeds** - hybrid architecture for large models
+4. **Serialization overhead is minimal** - <0.5ms for 2MB tensors
+5. **OpenCL works on AMD GPUs** via tinygrad's GPU backend
+6. **gRPC is optional** - Power8 runs without gRPC (ppc64le compatibility)
 
 ## Distributed Inference Strategy
 

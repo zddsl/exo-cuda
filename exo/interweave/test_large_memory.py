@@ -29,7 +29,7 @@ async def test_large_tensor_power8():
     nodes = {
         "dell": "192.168.0.161:8089",
         "mac": "192.168.0.153:8089",
-        "power8": "192.168.0.50:8089",
+        # "power8": "192.168.0.50:8089",  # Currently building PyTorch
     }
 
     print("\n" + "="*70)
