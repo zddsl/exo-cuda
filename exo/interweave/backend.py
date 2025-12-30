@@ -222,6 +222,7 @@ class BackendRegistry:
 
         Checks for:
         - CUDA availability (nvidia-smi, torch.cuda)
+        - OpenCL availability (AMD GPUs, Intel GPUs)
         - MLX availability (Apple Silicon check)
         - llama.cpp binary
         - CPU is always available
@@ -231,6 +232,10 @@ class BackendRegistry:
         # Check CUDA
         if cls._check_cuda():
             available.append('tinygrad_cuda')
+
+        # Check OpenCL (AMD/Intel GPUs)
+        if cls._check_opencl():
+            available.append('tinygrad_opencl')
 
         # Check MLX (Apple Silicon)
         if cls._check_mlx():
@@ -266,6 +271,35 @@ class BackendRegistry:
             from tinygrad import Device
             if 'CUDA' in Device.DEFAULT or 'GPU' in Device.DEFAULT:
                 return True
+        except ImportError:
+            pass
+
+        return False
+
+    @classmethod
+    def _check_opencl(cls) -> bool:
+        """Check if OpenCL GPU is available (AMD, Intel GPUs)"""
+        # Skip if CUDA is available (prefer CUDA over OpenCL for NVIDIA)
+        if cls._check_cuda():
+            return False
+
+        try:
+            from tinygrad import Device
+            # Check if GPU device is available (uses OpenCL on non-CUDA systems)
+            try:
+                gpu = Device['GPU']
+                if gpu is not None:
+                    # Verify it's actually OpenCL (not CUDA/Metal)
+                    device_type = type(gpu).__name__
+                    if 'CL' in device_type or 'OpenCL' in device_type:
+                        return True
+                    # Also accept generic GPU on non-Apple platforms
+                    import platform
+                    if platform.system() == 'Darwin':
+                        # On macOS, GPU might be Metal or OpenCL
+                        return True
+            except Exception:
+                pass
         except ImportError:
             pass
 
@@ -383,7 +417,7 @@ class BackendRegistry:
         # Sort by preference
         def score_backend(name: str) -> tuple:
             # GPU preferred over CPU
-            is_gpu = 'cuda' in name or 'mlx' in name
+            is_gpu = 'cuda' in name or 'mlx' in name or 'opencl' in name
             # Exact match in preferences
             exact_match = name in shard.preferred_backends
             return (is_gpu, exact_match, name)

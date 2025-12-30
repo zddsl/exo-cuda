@@ -365,6 +365,69 @@ class TinygradCudaBackend(InterweaveBackend):
         logger.info("TinyGrad CUDA backend cleaned up")
 
 
+@BackendRegistry.register('tinygrad_opencl')
+class TinygradOpenCLBackend(TinygradCudaBackend):
+    """
+    TinyGrad OpenCL backend for AMD GPUs.
+
+    Uses tinygrad's GPU device which leverages OpenCL on systems
+    without CUDA (like Mac Pro with AMD FirePro D500).
+
+    Optimal for:
+    - AMD GPUs (FirePro, Radeon series)
+    - Intel integrated GPUs with OpenCL
+    - Any GPU with OpenCL 1.2+ support
+    """
+
+    def __init__(self, jit: bool = True, beam: int = 0):
+        # Force GPU device which uses OpenCL
+        super().__init__(device='GPU', jit=jit, beam=beam)
+
+    @property
+    def name(self) -> str:
+        return 'tinygrad_opencl'
+
+    @property
+    def device_type(self) -> str:
+        return 'opencl'
+
+    def _check_tinygrad(self) -> bool:
+        """Check if tinygrad with OpenCL/GPU is available"""
+        try:
+            from tinygrad import Tensor, Device
+
+            # Check if GPU (OpenCL) device is available
+            try:
+                gpu = Device['GPU']
+                if gpu is not None:
+                    logger.info(f"TinyGrad OpenCL backend available: {type(gpu).__name__}")
+                    return True
+            except Exception as e:
+                logger.warning(f"GPU device not available: {e}")
+                return False
+
+            return True
+        except ImportError as e:
+            logger.error(f"TinyGrad not available: {e}")
+            return False
+
+    async def get_memory_available(self) -> int:
+        """Get available GPU VRAM via OpenCL query or estimate"""
+        try:
+            from tinygrad import Device
+            gpu = Device['GPU']
+
+            # Try to get OpenCL device info
+            if hasattr(gpu, 'dev') and hasattr(gpu.dev, 'global_mem_size'):
+                return gpu.dev.global_mem_size
+        except Exception as e:
+            logger.debug(f"Could not query OpenCL memory: {e}")
+
+        # For AMD FirePro D500: 3GB VRAM per GPU
+        # Default estimate for unknown GPUs
+        return 3 * 1024**3  # 3GB default
+
+
 @BackendRegistry.register('tinygrad_cpu')
 class TinygradCpuBackend(TinygradCudaBackend):
     """
