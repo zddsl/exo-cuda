@@ -39,7 +39,8 @@ class InterweaveNode:
             self.primary_backend = 'cpu'
             self.device = 'CPU'
 
-        self.app = web.Application()
+        # Support large tensors up to 2GB (for 70B model activations)
+        self.app = web.Application(client_max_size=2 * 1024 * 1024 * 1024)
         self._setup_routes()
 
         # Stats
