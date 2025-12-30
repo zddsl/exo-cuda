@@ -6,6 +6,7 @@ Tests tensor operations, serialization, and compute performance
 across heterogeneous backends (CUDA, OpenCL, CPU).
 """
 
+import json
 import time
 import numpy as np
 import platform
@@ -278,16 +279,26 @@ def run_full_benchmark() -> Dict:
     return results
 
 
+class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy types"""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+
 def main():
     """CLI entry point"""
-    import json
-
     results = run_full_benchmark()
 
     # Save results
     output_file = f"benchmark_{results['system']['hostname']}.json"
     with open(output_file, 'w') as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=2, cls=NumpyEncoder)
 
     print(f"\nResults saved to: {output_file}")
     return results
