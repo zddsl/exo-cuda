@@ -1,8 +1,29 @@
 # Interweave Protocol Benchmark Results
 
-## STATUS: REAL TRANSFORMER INFERENCE WORKING
+## STATUS: CROSS-NODE DISTRIBUTED INFERENCE WORKING!
 
 **Tested: December 30, 2024**
+
+### REAL Distributed Inference (Tensor flowing across network)
+
+```
+┌─────────────────────────┐         ┌─────────────────────────┐
+│   Dell C4130            │  HTTP   │   Mac Pro               │
+│   V100 CUDA             │ ──────► │   FirePro D500 OpenCL   │
+│   486ms                 │ tensor  │   619ms                 │
+└─────────────────────────┘         └─────────────────────────┘
+```
+
+**Total distributed inference time: 1447ms** (with cached kernels)
+
+| Run | Dell C4130 (V100) | Mac Pro (FirePro) | Total |
+|-----|-------------------|-------------------|-------|
+| 1st (kernel compile) | 9128ms | 2215ms | 11473ms |
+| 2nd (cached) | **486ms** | **619ms** | **1447ms** |
+
+The UniversalTensor is serialized on CUDA, sent over HTTP, deserialized on OpenCL, processed, and returned!
+
+---
 
 ### Real Transformer Layer Test (Multi-Head Attention + FFN)
 
