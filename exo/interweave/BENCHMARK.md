@@ -4,24 +4,25 @@
 
 **Tested: December 30, 2024**
 
-### REAL Distributed Inference (Tensor flowing across network)
+### REAL Distributed Inference (Tensor flowing across 3 nodes)
 
 ```
-┌─────────────────────────┐         ┌─────────────────────────┐
-│   Dell C4130            │  HTTP   │   Mac Pro               │
-│   V100 CUDA             │ ──────► │   FirePro D500 OpenCL   │
-│   486ms                 │ tensor  │   619ms                 │
-└─────────────────────────┘         └─────────────────────────┘
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
+│  Dell C4130     │ HTTP  │  Mac Pro        │ HTTP  │  IBM Power8     │
+│  V100 CUDA      │──────►│  FirePro OpenCL │──────►│  ppc64le CPU    │
+│  166ms          │tensor │  648ms          │tensor │  2350ms         │
+└─────────────────┘       └─────────────────┘       └─────────────────┘
 ```
 
-**Total distributed inference time: 1447ms** (with cached kernels)
+**Total 3-node distributed inference: 3277ms**
 
-| Run | Dell C4130 (V100) | Mac Pro (FirePro) | Total |
-|-----|-------------------|-------------------|-------|
-| 1st (kernel compile) | 9128ms | 2215ms | 11473ms |
-| 2nd (cached) | **486ms** | **619ms** | **1447ms** |
+| Node | Backend | Architecture | Time |
+|------|---------|--------------|------|
+| Dell C4130 | tinygrad_cuda | x86_64 + V100 | **166ms** |
+| Mac Pro | tinygrad_opencl | x86_64 + FirePro D500 | **648ms** |
+| Power8 | numpy CPU | ppc64le | **2350ms** |
 
-The UniversalTensor is serialized on CUDA, sent over HTTP, deserialized on OpenCL, processed, and returned!
+The UniversalTensor flows: CUDA → serialize → HTTP → deserialize → OpenCL → serialize → HTTP → deserialize → CPU!
 
 ---
 
@@ -140,6 +141,33 @@ Based on benchmarks, optimal shard distribution for 70B model:
 └─────────────────────────┘
 ```
 
+## What's New vs exo-explore/exo
+
+| Feature | Official Exo | Interweave Protocol |
+|---------|--------------|---------------------|
+| Cross-backend tensor transfer | NumPy only (90% perf loss per Issue #861) | **UniversalTensor with quantization metadata** |
+| Heterogeneous backends | Fragmented (Issues #563, #861, #923) | **Unified BackendRegistry system** |
+| Backend-agnostic format | Implicit NumPy | **Binary wire format with versioning** |
+| Power8 ppc64le support | Not supported | **Optional gRPC, CPU fallback** |
+| Quantization (i8/i4) | Not implemented | **Built-in with scale/zero_point** |
+| Real heterogeneous test | 2-node MLX only | **3-node CUDA+OpenCL+CPU verified** |
+
+### Key Innovation: UniversalTensor
+
+```python
+@dataclass
+class UniversalTensor:
+    data: bytes           # Raw bytes (backend-agnostic)
+    shape: Tuple[int, ...]
+    dtype: DType          # f32, f16, bf16, i8, i4
+    scale: float          # Quantization scale
+    zero_point: int       # Quantization offset
+```
+
+Wire format: `[MAGIC:4][VER:1][DTYPE:1][LAYOUT:1][FLAGS:1][SHAPE:...][DATA:...]`
+
+This solves the "90% performance loss" issue (exo Issue #861) when mixing backends.
+
 ## Running Benchmarks
 
 ```bash
@@ -147,4 +175,14 @@ Based on benchmarks, optimal shard distribution for 70B model:
 python3 -m exo.interweave.benchmark
 
 # Results saved to: benchmark_<hostname>.json
+```
+
+## Running Distributed Inference
+
+```bash
+# Start server on each node:
+python3 -m exo.interweave.distributed_server --port 8089
+
+# Run distributed test:
+python3 -m exo.interweave.run_distributed 192.168.0.161:8089 192.168.0.153:8089 192.168.0.50:8089
 ```
