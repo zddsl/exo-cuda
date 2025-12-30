@@ -95,15 +95,16 @@ def test_local_forward_pass(hidden_size: int = 2048, seq_len: int = 32) -> Dict:
             else:
                 device = 'GPU'
 
-            # Convert to tinygrad tensor
-            x = Tensor(received_tensor.to_numpy(), device=device)
+            # Convert to tinygrad tensor (copy to ensure writable, use float32 for stability)
+            np_input = received_tensor.to_numpy().astype(np.float32).copy()
+            x = Tensor(np_input, device=device)
 
             # Simulate attention: Q, K, V projections + output
             # This is a simplified version - real attention is more complex
-            wq = Tensor.randn(hidden_size, hidden_size, device=device).half()
-            wk = Tensor.randn(hidden_size, hidden_size, device=device).half()
-            wv = Tensor.randn(hidden_size, hidden_size, device=device).half()
-            wo = Tensor.randn(hidden_size, hidden_size, device=device).half()
+            wq = Tensor.randn(hidden_size, hidden_size, device=device)
+            wk = Tensor.randn(hidden_size, hidden_size, device=device)
+            wv = Tensor.randn(hidden_size, hidden_size, device=device)
+            wo = Tensor.randn(hidden_size, hidden_size, device=device)
 
             # Warmup
             _ = (x @ wq).numpy()
@@ -128,8 +129,8 @@ def test_local_forward_pass(hidden_size: int = 2048, seq_len: int = 32) -> Dict:
             print(f"   Attention layer: {compute_time:.2f}ms")
 
             # Simulate FFN
-            w1 = Tensor.randn(hidden_size, hidden_size * 4, device=device).half()
-            w2 = Tensor.randn(hidden_size * 4, hidden_size, device=device).half()
+            w1 = Tensor.randn(hidden_size, hidden_size * 4, device=device)
+            w2 = Tensor.randn(hidden_size * 4, hidden_size, device=device)
 
             start = time.perf_counter()
             x_tensor = Tensor(result, device=device)
@@ -154,11 +155,11 @@ def test_local_forward_pass(hidden_size: int = 2048, seq_len: int = 32) -> Dict:
     else:
         # CPU fallback - numpy only
         print("   Running on CPU (numpy)...")
-        x = received_tensor.to_numpy()
+        x = received_tensor.to_numpy().astype(np.float32).copy()
 
-        # Simplified computation
+        # Simplified computation with float32 for stability
         start = time.perf_counter()
-        wq = np.random.randn(hidden_size, hidden_size).astype(np.float16)
+        wq = np.random.randn(hidden_size, hidden_size).astype(np.float32) * 0.02  # Scale down
         q = x @ wq
         k = x @ wq  # Reuse for simplicity
         v = x @ wq
@@ -168,6 +169,7 @@ def test_local_forward_pass(hidden_size: int = 2048, seq_len: int = 32) -> Dict:
 
         results['tests']['cpu_compute'] = {
             'compute_ms': compute_time,
+            'output_shape': attn_out.shape,
         }
         print(f"   CPU compute: {compute_time:.2f}ms")
         final_output = attn_out
