@@ -5,7 +5,10 @@ from collections import OrderedDict
 
 
 # https://github.com/facebookresearch/llama/blob/1076b9c51c77ad06e9d7ba8a4c6df775741732bd/llama/model.py#L47
-def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0, dtype=dtypes.half, rope_scaling: Optional[Dict[str, float]] = None) -> Tensor:
+def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0, dtype=None, rope_scaling: Optional[Dict[str, float]] = None) -> Tensor:
+  # USE_FP32=1 forces f32 for devices without fp16 support
+  if dtype is None:
+    dtype = dtypes.float32 if getenv("USE_FP32", 0) else dtypes.half
   freqs = 1.0/(theta**(Tensor.arange(0, dim, 2)[:(dim // 2)]/dim))
 
   if rope_scaling:
