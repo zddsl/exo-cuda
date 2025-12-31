@@ -11,28 +11,49 @@
 ```
 ┌─────────────────────────┐  tensor  ┌─────────────────────────┐
 │   Dell C4130 V100       │ ───────► │   Mac Pro "Trashcan"    │
-│   Layers 0-7: 576ms     │   HTTP   │   Layers 8-15: 3914ms   │
-│   CUDA backend          │          │   LLVM/CPU backend      │
+│   Layers 0-7: 393ms     │   HTTP   │   Layers 8-15: 812ms    │
+│   CUDA (fp16/bf16)      │  (f32)   │   OpenCL (D500, f32)    │
 │   x86_64                │          │   x86_64                │
 └─────────────────────────┘          └─────────────────────────┘
-                     Total: 3930ms per token
+                     Total: 818ms per token (cached)
 ```
 
-**This is REAL model inference with REAL Llama 3.2-1B weights!**
+**This is REAL model inference with REAL Llama 3.2-1B weights across HETEROGENEOUS GPUs!**
 
 | Node | Layers | Backend | Time | Notes |
 |------|--------|---------|------|-------|
-| Dell C4130 | 0-7 | tinygrad CUDA (V100) | **576ms** | GPU accelerated |
-| Mac Pro | 8-15 | tinygrad LLVM/CPU | **3914ms** | CPU fallback (SUPPORT_BF16=0) |
+| Dell C4130 | 0-7 | tinygrad CUDA (V100) | **393ms** | Native fp16 |
+| Mac Pro | 8-15 | tinygrad OpenCL (D500) | **812ms** | USE_FP32=1 |
 
-### Key Findings
+### Key Innovation: Universal f32 Serialization
 
-1. **Heterogeneous backends work**: CUDA → LLVM/CPU tensor transfer successful
-2. **bf16 workaround**: Set `SUPPORT_BF16=0` for older Metal/OpenCL that don't support bfloat16
-3. **llvmlite required**: Install `llvmlite` for CPU fallback path
+The UniversalTensor uses f32 as the wire format. Each node converts:
+- **Dell V100**: fp16/bf16 internally → serializes to f32 → sends
+- **Mac D500**: receives f32 → processes in f32 → serializes to f32 → sends back
+- **Head node**: receives f32 → converts back to native dtype if needed
 
-### Requirements for Mac (older Metal without bf16)
+### Environment Variables
 
+| Variable | Effect |
+|----------|--------|
+| `USE_FP32=1` | Forces all operations to f32 (required for D500, older OpenCL without fp16) |
+| `SUPPORT_BF16=0` | Uses LLVM for bf16→f32 conversion (CPU fallback path) |
+| `GPU=1 METAL=0` | Forces OpenCL instead of Metal on Mac |
+
+### Setup Commands
+
+**Dell C4130 (V100 CUDA):**
+```bash
+python3 -m exo.interweave.real_model_server --model llama-3.2-1b --start-layer 0 --end-layer 7 --port 8090
+```
+
+**Mac Pro D500 (OpenCL with f32):**
+```bash
+export GPU=1 METAL=0 USE_FP32=1
+python3 -m exo.interweave.real_model_server --model llama-3.2-1b --start-layer 8 --end-layer 15 --port 8090
+```
+
+**Mac Pro CPU fallback (if OpenCL fails):**
 ```bash
 pip install llvmlite
 export SUPPORT_BF16=0
