@@ -1,0 +1,51 @@
+{
+  "node": {
+    "hostname": "sophiacord2-PowerEdge-C4130",
+    "backends": [
+      "tinygrad_cuda",
+      "tinygrad_cpu"
+    ],
+    "primary": "tinygrad_cuda",
+    "device": "CUDA"
+  },
+  "tests": {
+    "tensor_receive": {
+      "shape": [
+        1,
+        32,
+        2048
+      ],
+      "size_kb": 128.03515625,
+      "transfer_ms": 0.12284997501410544
+    },
+    "attention_layer": {
+      "backend": "tinygrad_cuda",
+      "compute_ms": 1989.8444439750165,
+      "output_shape": [
+        1,
+        32,
+        2048
+      ]
+    },
+    "ffn_layer": {
+      "backend": "tinygrad_cuda",
+      "compute_ms": 3807.9632179869805,
+      "output_shape": [
+        1,
+        32,
+        2048
+      ]
+    },
+    "tensor_send": {
+      "shape": [
+        1,
+        32,
+        2048
+      ],
+      "size_kb": 128.03515625,
+      "serialize_ms": 0.11074001668021083
+    },
+    "integrity": "PASS"
+  },
+  "total_ms": 5798.041251953691
+}

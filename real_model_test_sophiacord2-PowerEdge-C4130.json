@@ -1,0 +1,13 @@
+{
+  "hostname": "sophiacord2-PowerEdge-C4130",
+  "device": "CUDA",
+  "attention_ms": 1089.0338049794082,
+  "ffn_ms": 600.5514309799764,
+  "total_ms": 1689.5852359593846,
+  "output_shape": [
+    1,
+    32,
+    2048
+  ],
+  "status": "SUCCESS"
+}

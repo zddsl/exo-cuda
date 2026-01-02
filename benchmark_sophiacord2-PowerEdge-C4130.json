@@ -1,0 +1,110 @@
+{
+  "system": {
+    "hostname": "sophiacord2-PowerEdge-C4130",
+    "platform": "Linux",
+    "arch": "x86_64",
+    "python": "3.13.11",
+    "gpu": "Tesla M40"
+  },
+  "backends": [
+    "tinygrad_cuda",
+    "tinygrad_cpu"
+  ],
+  "benchmarks": {
+    "tensor_creation": {
+      "(64, 64)": {
+        "mean_ms": 0.006624838861171156,
+        "std_ms": 0.0046569874915634545,
+        "elements": 4096
+      },
+      "(256, 256)": {
+        "mean_ms": 0.02621510997414589,
+        "std_ms": 0.0019518770397292874,
+        "elements": 65536
+      },
+      "(1024, 1024)": {
+        "mean_ms": 1.6056801279773936,
+        "std_ms": 1.6375647725492484,
+        "elements": 1048576
+      },
+      "(2048, 2048)": {
+        "mean_ms": 10.556920781091321,
+        "std_ms": 6.025297310885495,
+        "elements": 4194304
+      }
+    },
+    "serialization": {
+      "(64, 64)": {
+        "serialize_ms": 0.007537001511082053,
+        "deserialize_ms": 0.00841698085423559,
+        "size_mb": 0.015651702880859375,
+        "throughput_mbps": 2076.6484997841444
+      },
+      "(256, 256)": {
+        "serialize_ms": 0.03214003751054406,
+        "deserialize_ms": 0.03147722047287971,
+        "size_mb": 0.2500267028808594,
+        "throughput_mbps": 7779.2909482085715
+      },
+      "(1024, 1024)": {
+        "serialize_ms": 0.7109242025762796,
+        "deserialize_ms": 0.4686032608151436,
+        "size_mb": 4.000026702880859,
+        "throughput_mbps": 5626.5164252185805
+      },
+      "(2048, 2048)": {
+        "serialize_ms": 2.0984022959601134,
+        "deserialize_ms": 2.372819894226268,
+        "size_mb": 16.00002670288086,
+        "throughput_mbps": 7624.861416556985
+      }
+    },
+    "dtype_conversion": {
+      "f32->f16": {
+        "mean_ms": 6.107515648182016,
+        "std_ms": 0.3137679083055114
+      },
+      "f16->f32": {
+        "mean_ms": 3.9301875978708267,
+        "std_ms": 1.0127058823251367
+      },
+      "f32->i8": {
+        "mean_ms": 2.221283754624892,
+        "std_ms": 0.2605696857257354
+      },
+      "i8->f32": {
+        "mean_ms": 2.1217771514784545,
+        "std_ms": 0.4000428756324852
+      }
+    },
+    "backend_matmul": {
+      "tinygrad_cuda": {
+        "size": 1024,
+        "mean_ms": 7.5594327005092055,
+        "std_ms": 4.108276333048538,
+        "tflops": 0.2840800008518291
+      },
+      "tinygrad_cpu": {
+        "status": "error",
+        "error": "[Errno 2] No such file or directory: 'clang'"
+      }
+    },
+    "simulated_transfer": {
+      "256x256": {
+        "total_ms": 0.03917119902325794,
+        "size_mb": 0.12502670288085938,
+        "effective_bandwidth_mbps": 3191.8017829023984
+      },
+      "512x512": {
+        "total_ms": 0.09835825039772317,
+        "size_mb": 0.5000267028808594,
+        "effective_bandwidth_mbps": 5083.7291316075925
+      },
+      "1024x1024": {
+        "total_ms": 0.4177557959337719,
+        "size_mb": 2.0000267028808594,
+        "effective_bandwidth_mbps": 4787.549861302055
+      }
+    }
+  }
+}
