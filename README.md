@@ -1,34 +1,35 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: light)" srcset="/docs/exo-logo-black-bg.jpg">
-  <img alt="exo logo" src="/docs/exo-logo-transparent.png" width="50%" height="50%">
-</picture>
+# exo-cuda: Distributed NVIDIA CUDA Inference
 
-exo: Run your own AI cluster at home with everyday devices. Maintained by [exo labs](https://x.com/exolabs).
+[![CUDA](https://img.shields.io/badge/CUDA-12.0+-green)](https://developer.nvidia.com/cuda-toolkit)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
+[![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
+[![Tesla](https://img.shields.io/badge/Tesla-V100%2FM40-orange)](https://github.com/Scottcjn/exo-cuda)
 
+**First verified working NVIDIA CUDA distributed inference for exo**
 
-<h3>
+*Run large language models across multiple NVIDIA GPUs with automatic node discovery*
 
-[Discord](https://discord.gg/EUnjGpsmWw) | [Telegram](https://t.me/+Kh-KqHTzFYg3MGNk) | [X](https://x.com/exolabs)
-
-</h3>
-
-[![GitHub Repo stars](https://img.shields.io/github/stars/exo-explore/exo)](https://github.com/exo-explore/exo/stargazers)
-[![Tests](https://dl.circleci.com/status-badge/img/circleci/TrkofJDoGzdQAeL6yVHKsg/4i5hJuafuwZYZQxbRAWS71/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/TrkofJDoGzdQAeL6yVHKsg/4i5hJuafuwZYZQxbRAWS71/tree/main)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-
-<a href="https://trendshift.io/repositories/11849" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11849" alt="exo-explore%2Fexo | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+[Quick Start](#-quick-start) • [Verified Hardware](#-verified-hardware) • [Multi-Node Setup](#-multi-node-cluster) • [Troubleshooting](#-troubleshooting)
 
 </div>
 
 ---
 
-## NVIDIA CUDA Support (exo-cuda fork)
+## 🎯 What This Fork Adds
 
-This fork restores **full NVIDIA CUDA support** via the tinygrad inference engine, enabling distributed inference across NVIDIA GPUs. This is the first verified working distributed CUDA inference implementation for exo.
+The original [exo](https://github.com/exo-explore/exo) focuses on Apple Silicon (MLX). This fork restores **full NVIDIA CUDA support** via tinygrad:
 
-### Quick Start for NVIDIA GPUs
+| Feature | Original exo | exo-cuda |
+|---------|-------------|----------|
+| Apple Silicon (MLX) | ✅ | ✅ |
+| NVIDIA CUDA | ❌ Broken | ✅ **Working** |
+| Tesla V100/M40 | ❌ | ✅ **Tested** |
+| Multi-GPU cluster | ⚠️ MLX only | ✅ **CUDA cluster** |
+| Distributed inference | ✅ | ✅ |
+
+## ⚡ Quick Start
 
 ```bash
 # Clone this repo
@@ -40,336 +41,170 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
-# Upgrade tinygrad to latest for best CUDA support
+# Upgrade tinygrad to latest (fixes CUDA issues)
 pip install --upgrade git+https://github.com/tinygrad/tinygrad.git
 
-# Start with tinygrad (CUDA) backend
+# Start with CUDA backend
 exo --inference-engine tinygrad --chatgpt-api-port 8001 --disable-tui
 ```
 
-### System Requirements
+## 📋 Requirements
 
-| Requirement | Details |
-|-------------|---------|
+| Component | Requirement |
+|-----------|-------------|
 | **OS** | Ubuntu 22.04/24.04, Debian 12+ |
-| **Python** | 3.10+ (3.12+ recommended) |
-| **NVIDIA Driver** | 525+ (verify with `nvidia-smi`) |
-| **CUDA Toolkit** | 12.0+ (install: `apt install nvidia-cuda-toolkit`) |
-| **GPU Memory** | Minimum 8GB per node for small models |
+| **Python** | 3.10+ (3.12 recommended) |
+| **NVIDIA Driver** | 525+ (`nvidia-smi` to verify) |
+| **CUDA Toolkit** | 12.0+ (`nvcc --version` to verify) |
+| **GPU Memory** | 8GB+ per node |
 
-### Verified Hardware (December 2024)
+### Install CUDA Toolkit
+```bash
+# Ubuntu/Debian
+sudo apt install nvidia-cuda-toolkit
 
-| Hardware | GPU | Memory | Status |
-|----------|-----|--------|--------|
+# Verify
+nvcc --version
+nvidia-smi
+```
+
+## ✅ Verified Hardware
+
+Tested December 2024 - January 2025:
+
+| Server | GPU | VRAM | Status |
+|--------|-----|------|--------|
 | Dell PowerEdge C4130 | Tesla V100-SXM2 | 16GB | ✅ Working |
 | Dell PowerEdge C4130 | Tesla M40 | 24GB | ✅ Working |
-| Multi-node cluster | Mixed V100/M40 | 40GB+ | ✅ Working |
+| Custom Build | RTX 3090 | 24GB | ✅ Working |
+| Multi-node cluster | V100 + M40 | 40GB total | ✅ Working |
 
-### Multi-Node Cluster Setup
+## 🖥️ Multi-Node Cluster
 
-#### Node 1 (Primary):
+### Node 1 (Primary + API)
 ```bash
 exo --inference-engine tinygrad --chatgpt-api-port 8001 --disable-tui
 ```
 
-#### Node 2+:
+### Node 2+ (Workers)
 ```bash
 exo --inference-engine tinygrad --disable-tui
 ```
 
-Nodes auto-discover via UDP broadcast. For manual peer configuration:
+**That's it!** Nodes auto-discover via UDP broadcast. No manual configuration.
+
+### Manual Peer Configuration (Optional)
 ```bash
+# Create peers.json
+echo '{"peers": ["192.168.1.100:5678", "192.168.1.101:5678"]}' > peers.json
+
+# Start with manual discovery
 exo --inference-engine tinygrad --discovery-module manual \
-    --discovery-config-path /path/to/peers.json
+    --discovery-config-path peers.json
 ```
 
-### API Usage
+## 🔌 API Usage
+
+exo provides a **ChatGPT-compatible API**:
 
 ```bash
-# Test inference
+# Chat completion
 curl http://localhost:8001/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "llama-3.2-1b",
+    "model": "llama-3.2-3b",
     "messages": [{"role": "user", "content": "Hello!"}],
-    "max_tokens": 50
+    "max_tokens": 100
   }'
+
+# List models
+curl http://localhost:8001/v1/models
 ```
 
 ### Supported Models
 
-All tinygrad-compatible models work, including:
-- Llama 3.x (1B, 3B, 8B, 70B, 405B)
-- DeepSeek (R1, Coder, V3)
-- Qwen 2.5 (0.5B - 72B)
-- Mistral, Gemma, Phi, and more
+All tinygrad-compatible models work:
 
-### Troubleshooting
+| Model | Parameters | Min VRAM |
+|-------|------------|----------|
+| Llama 3.2 1B | 1B | 4GB |
+| Llama 3.2 3B | 3B | 8GB |
+| Llama 3.1 8B | 8B | 16GB |
+| Llama 3.1 70B | 70B | 140GB (cluster) |
+| DeepSeek Coder | Various | Varies |
+| Qwen 2.5 | 0.5B-72B | Varies |
+| Mistral 7B | 7B | 14GB |
+
+## 🔧 Environment Variables
+
+```bash
+# Debug logging (0-9, higher = more verbose)
+DEBUG=2 exo --inference-engine tinygrad
+
+# Tinygrad-specific debug (1-6)
+TINYGRAD_DEBUG=2 exo --inference-engine tinygrad
+
+# Limit GPU visibility
+CUDA_VISIBLE_DEVICES=0,1 exo --inference-engine tinygrad
+```
+
+## 🐛 Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| `nvcc not found` | Install CUDA toolkit: `apt install nvidia-cuda-toolkit` |
-| `OpenCL exp2 error` | Upgrade tinygrad: `pip install --upgrade git+https://github.com/tinygrad/tinygrad.git` |
-| `No GPU detected` | Verify driver: `nvidia-smi`, check CUDA: `nvcc --version` |
-| `Out of memory` | Use smaller model or add more nodes to cluster |
+| `nvcc not found` | `sudo apt install nvidia-cuda-toolkit` |
+| `OpenCL exp2 error` | `pip install --upgrade git+https://github.com/tinygrad/tinygrad.git` |
+| `No GPU detected` | Check `nvidia-smi` and `nvcc --version` |
+| `Out of memory` | Use smaller model or add more nodes |
+| `Connection refused` | Check firewall allows UDP broadcast |
 
-### Environment Variables
+### Common Fixes
 
 ```bash
-DEBUG=2              # Enable debug logging (0-9)
-TINYGRAD_DEBUG=2     # Tinygrad-specific debug (1-6)
-CUDA_VISIBLE_DEVICES=0,1  # Limit GPU visibility
+# Fix tinygrad CUDA issues
+pip install --upgrade git+https://github.com/tinygrad/tinygrad.git
+
+# Verify CUDA is working
+python3 -c "from tinygrad import Device; print(Device.DEFAULT)"
+# Should print: CUDA
+
+# Test GPU memory
+nvidia-smi --query-gpu=memory.free --format=csv
 ```
 
-### Maintained By
+## 📊 Performance Tips
 
-[Elyan Labs](https://elyanlabs.ai) - scott@elyanlabs.ai
+1. **Use SXM2 GPUs** - NVLink provides faster inter-GPU communication
+2. **Match GPU types** - Heterogeneous clusters work but homogeneous is faster
+3. **10GbE+ networking** - For multi-node clusters, network is the bottleneck
+4. **Disable TUI** - `--disable-tui` reduces overhead
 
-Based on original [exo](https://github.com/exo-explore/exo) by exo labs.
+## 🔗 Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [nvidia-power8-patches](https://github.com/Scottcjn/nvidia-power8-patches) | NVIDIA drivers for IBM POWER8 |
+| [cuda-power8-patches](https://github.com/Scottcjn/cuda-power8-patches) | CUDA toolkit for POWER8 |
+| [llama-cpp-power8](https://github.com/Scottcjn/llama-cpp-power8) | llama.cpp on POWER8 |
+
+## 🙏 Credits
+
+- Original [exo](https://github.com/exo-explore/exo) by [exo labs](https://x.com/exolabs)
+- [tinygrad](https://github.com/tinygrad/tinygrad) for the CUDA backend
+- NVIDIA for CUDA toolkit
+
+## 📜 License
+
+GPL-3.0 (same as original exo)
 
 ---
 
-Forget expensive NVIDIA GPUs, unify your existing devices into one powerful GPU: iPhone, iPad, Android, Mac, Linux, pretty much any device!
-
 <div align="center">
-  <h2>Update: exo is hiring. See <a href="https://exolabs.net">here</a> for more details.</h2>
+
+**Maintained by [Elyan Labs](https://elyanlabs.ai)**
+
+*Distributed NVIDIA inference that actually works*
+
+[Report Issues](https://github.com/Scottcjn/exo-cuda/issues) • [Original exo](https://github.com/exo-explore/exo)
+
 </div>
-
-## Get Involved
-
-exo is **experimental** software. Expect bugs early on. Create issues so they can be fixed. The [exo labs](https://x.com/exolabs) team will strive to resolve issues quickly.
-
-We also welcome contributions from the community. We have a list of bounties in [this sheet](https://docs.google.com/spreadsheets/d/1cTCpTIp48UnnIvHeLEUNg1iMy_Q6lRybgECSFCoVJpE/edit?usp=sharing).
-
-## Features
-
-### Wide Model Support
-
-exo supports different models including LLaMA ([MLX](exo/inference/mlx/models/llama.py) and [tinygrad](exo/inference/tinygrad/models/llama.py)), Mistral, LlaVA, Qwen, and Deepseek.
-
-### Dynamic Model Partitioning
-
-exo [optimally splits up models](exo/topology/ring_memory_weighted_partitioning_strategy.py) based on the current network topology and device resources available. This enables you to run larger models than you would be able to on any single device.
-
-### Automatic Device Discovery
-
-exo will [automatically discover](https://github.com/exo-explore/exo/blob/945f90f676182a751d2ad7bcf20987ab7fe0181e/exo/orchestration/node.py#L154) other devices using the best method available. Zero manual configuration.
-
-### ChatGPT-compatible API
-
-exo provides a [ChatGPT-compatible API](exo/api/chatgpt_api.py) for running models. It's a [one-line change](examples/chatgpt_api.sh) in your application to run models on your own hardware using exo.
-
-### Device Equality
-
-Unlike other distributed inference frameworks, exo does not use a master-worker architecture. Instead, exo devices [connect p2p](https://github.com/exo-explore/exo/blob/945f90f676182a751d2ad7bcf20987ab7fe0181e/exo/orchestration/node.py#L161). As long as a device is connected somewhere in the network, it can be used to run models.
-
-Exo supports different [partitioning strategies](exo/topology/partitioning_strategy.py) to split up a model across devices. The default partitioning strategy is [ring memory weighted partitioning](exo/topology/ring_memory_weighted_partitioning_strategy.py). This runs an inference in a ring where each device runs a number of model layers proportional to the memory of the device.
-
-!["A screenshot of exo running 5 nodes](docs/exo-screenshot.jpg)
-
-## Installation
-
-The current recommended way to install exo is from source.
-
-### Prerequisites
-
-- Python>=3.12.0 is required because of [issues with asyncio](https://github.com/exo-explore/exo/issues/5) in previous versions.
-- For Linux with NVIDIA GPU support (Linux-only, skip if not using Linux or NVIDIA):
-  - NVIDIA driver - verify with `nvidia-smi`
-  - CUDA toolkit - install from [NVIDIA CUDA guide](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#cuda-cross-platform-installation), verify with `nvcc --version`
-  - cuDNN library - download from [NVIDIA cuDNN page](https://developer.nvidia.com/cudnn-downloads), verify installation by following [these steps](https://docs.nvidia.com/deeplearning/cudnn/latest/installation/linux.html#verifying-the-install-on-linux:~:text=at%20a%20time.-,Verifying%20the%20Install%20on%20Linux,Test%20passed!,-Upgrading%20From%20Older)
-
-### Hardware Requirements
-
-- The only requirement to run exo is to have enough memory across all your devices to fit the entire model into memory. For example, if you are running llama 3.1 8B (fp16), you need 16GB of memory across all devices. Any of the following configurations would work since they each have more than 16GB of memory in total:
-  - 2 x 8GB M3 MacBook Airs
-  - 1 x 16GB NVIDIA RTX 4070 Ti Laptop
-  - 2 x Raspberry Pi 400 with 4GB of RAM each (running on CPU) + 1 x 8GB Mac Mini
-- exo is designed to run on devices with heterogeneous capabilities. For example, you can have some devices with powerful GPUs and others with integrated GPUs or even CPUs. Adding less capable devices will slow down individual inference latency but will increase the overall throughput of the cluster.
-
-### From source
-
-
-```sh
-git clone https://github.com/exo-explore/exo.git
-cd exo
-pip install -e .
-# alternatively, with venv
-source install.sh
-```
-
-
-### Troubleshooting
-
-- If running on Mac, MLX has an [install guide](https://ml-explore.github.io/mlx/build/html/install.html) with troubleshooting steps.
-
-### Performance
-
-- There are a number of things users have empirically found to improve performance on Apple Silicon Macs:
-
-1. Upgrade to the latest version of macOS Sequoia.
-2. Run `./configure_mlx.sh`. This runs commands to optimize GPU memory allocation on Apple Silicon Macs.
-
-
-## Documentation
-
-### Example Usage on Multiple macOS Devices
-
-#### Device 1:
-
-```sh
-exo
-```
-
-#### Device 2:
-```sh
-exo
-```
-
-That's it! No configuration required - exo will automatically discover the other device(s).
-
-exo starts a ChatGPT-like WebUI (powered by [tinygrad tinychat](https://github.com/tinygrad/tinygrad/tree/master/examples/tinychat)) on http://localhost:52415
-
-For developers, exo also starts a ChatGPT-compatible API endpoint on http://localhost:52415/v1/chat/completions. Examples with curl:
-
-#### Llama 3.2 3B:
-
-```sh
-curl http://localhost:52415/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-     "model": "llama-3.2-3b",
-     "messages": [{"role": "user", "content": "What is the meaning of exo?"}],
-     "temperature": 0.7
-   }'
-```
-
-#### Llama 3.1 405B:
-
-```sh
-curl http://localhost:52415/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-     "model": "llama-3.1-405b",
-     "messages": [{"role": "user", "content": "What is the meaning of exo?"}],
-     "temperature": 0.7
-   }'
-```
-
-#### Llava 1.5 7B (Vision Language Model):
-
-```sh
-curl http://localhost:52415/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-     "model": "llava-1.5-7b-hf",
-     "messages": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "What are these?"
-          },
-          {
-            "type": "image_url",
-            "image_url": {
-              "url": "http://images.cocodataset.org/val2017/000000039769.jpg"
-            }
-          }
-        ]
-      }
-    ],
-     "temperature": 0.0
-   }'
-```
-
-### Example Usage on Multiple Heterogenous Devices (macOS + Linux)
-
-#### Device 1 (macOS):
-
-```sh
-exo
-```
-
-Note: We don't need to explicitly tell exo to use the **tinygrad** inference engine. **MLX** and **tinygrad** are interoperable!
-
-#### Device 2 (Linux):
-```sh
-exo
-```
-
-Linux devices will automatically default to using the **tinygrad** inference engine.
-
-You can read about tinygrad-specific env vars [here](https://docs.tinygrad.org/env_vars/). For example, you can configure tinygrad to use the cpu by specifying `CLANG=1`.
-
-### Example Usage on a single device with "exo run" command
-
-```sh
-exo run llama-3.2-3b
-```
-
-With a custom prompt:
-
-```sh
-exo run llama-3.2-3b --prompt "What is the meaning of exo?"
-```
-
-### Model Storage
-
-Models by default are stored in `~/.cache/exo/downloads`.
-
-You can set a different model storage location by setting the `EXO_HOME` env var.
-
-## Debugging
-
-Enable debug logs with the DEBUG environment variable (0-9).
-
-```sh
-DEBUG=9 exo
-```
-
-For the **tinygrad** inference engine specifically, there is a separate DEBUG flag `TINYGRAD_DEBUG` that can be used to enable debug logs (1-6).
-
-```sh
-TINYGRAD_DEBUG=2 exo
-```
-
-## Formatting
-
-We use [yapf](https://github.com/google/yapf) to format the code. To format the code, first install the formatting requirements:
-
-```sh
-pip3 install -e '.[formatting]'
-```
-
-Then run the formatting script:
-
-```sh
-python3 format.py ./exo
-```
-
-## Known Issues
-
-- On certain versions of Python on macOS, certificates may not installed correctly, potentially causing SSL errors (e.g., when accessing huggingface.co). To resolve this, run the `Install Certificates` command, typicall as follows:
-
-```sh
-/Applications/Python 3.x/Install Certificates.command
-```
-
-- 🚧 As the library is evolving so quickly, the iOS implementation has fallen behind Python. We have decided for now not to put out the buggy iOS version and receive a bunch of GitHub issues for outdated code. We are working on solving this properly and will make an announcement when it's ready. If you would like access to the iOS implementation now, please email alex@exolabs.net with your GitHub username explaining your use-case and you will be granted access on GitHub.
-
-## Inference Engines
-
-exo supports the following inference engines:
-
-- ✅ [MLX](exo/inference/mlx/sharded_inference_engine.py)
-- ✅ [tinygrad](exo/inference/tinygrad/inference.py)
-- 🚧 [PyTorch](https://github.com/exo-explore/exo/pull/139)
-- 🚧 [llama.cpp](https://github.com/exo-explore/exo/issues/167)
-
-## Networking Modules
-
-- ✅ [GRPC](exo/networking/grpc)
-- 🚧 [Radio](TODO)
-- 🚧 [Bluetooth](TODO)
