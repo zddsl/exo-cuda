@@ -7,6 +7,7 @@
 [![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
 [![Tesla](https://img.shields.io/badge/Tesla-V100%2FM40-orange)](https://github.com/Scottcjn/exo-cuda)
 
+[![BCOS Certified](https://img.shields.io/badge/BCOS-Certified-brightgreen?style=flat&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0id2hpdGUiPjxwYXRoIGQ9Ik0xMiAxTDMgNXY2YzAgNS41NSAzLjg0IDEwLjc0IDkgMTIgNS4xNi0xLjI2IDktNi40NSA5LTEyVjVsLTktNHptLTIgMTZsLTQtNCA1LjQxLTUuNDEgMS40MSAxLjQxTDEwIDE0bDYtNiAxLjQxIDEuNDFMMTAgMTd6Ii8+PC9zdmc+)](BCOS.md)
 **First verified working NVIDIA CUDA distributed inference for exo**
 
 *Run large language models across multiple NVIDIA GPUs with automatic node discovery*
